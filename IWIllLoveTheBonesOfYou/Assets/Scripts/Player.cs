@@ -5,10 +5,11 @@ using UnityStandardAssets.CrossPlatformInput;
 
 public class Player : MonoBehaviour
 {
-     Rigidbody2D myRigidBody;
-     Animator myAnimator;
+    Rigidbody2D myRigidBody;
+    Animator myAnimator;
     CapsuleCollider2D myBodyColider;
     BoxCollider2D myFeet;
+    public BoxCollider2D myArms = new BoxCollider2D();
     float GravityScaleAtStart;
 
     [SerializeField]
@@ -24,6 +25,7 @@ public class Player : MonoBehaviour
         myAnimator = GetComponent<Animator>();
         myBodyColider = GetComponent<CapsuleCollider2D>();
         myFeet = GetComponent<BoxCollider2D>();
+       // myArms = transform.GetChild(0).gameObject.GetComponent<BoxCollider2D>();
         GravityScaleAtStart = myRigidBody.gravityScale;
     }
 
@@ -31,6 +33,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         Run();
+        WallJump();
         Climb();
         Jump();
         FlipSprite();
@@ -38,11 +41,26 @@ public class Player : MonoBehaviour
 
     void Run()
     {
-        float controlThrow = CrossPlatformInputManager.GetAxis("Horizontal"); // Value is between -1 and +1
-        Vector2 playerVelocity = new Vector2(controlThrow * runningSpeed, myRigidBody.velocity.y);
+        float controlThrow;
+        Vector2 playerVelocity;
+       // if (myArms.IsTouchingLayers(LayerMask.GetMask("Ground"))) return ;
+        controlThrow = CrossPlatformInputManager.GetAxis("Horizontal"); // Value is between -1 and +1
+        playerVelocity = new Vector2(controlThrow * runningSpeed, myRigidBody.velocity.y);
         myRigidBody.velocity = playerVelocity;
 
         myAnimator.SetBool("Running", true);
+    }
+    void WallJump()
+    {
+        if (!myArms.IsTouchingLayers(LayerMask.GetMask("Ground"))) return;
+
+        float controlThrow = -CrossPlatformInputManager.GetAxis("Horizontal");
+        
+        if (CrossPlatformInputManager.GetButtonDown("Jump"))
+        {
+            Vector2 jumpVelocity = new Vector2((jumpSpeed) * controlThrow, jumpSpeed);
+            myRigidBody.velocity = jumpVelocity;
+        }
     }
 
     void FlipSprite()
@@ -57,7 +75,8 @@ public class Player : MonoBehaviour
 
     void Jump()
     {
-        if (!myFeet.IsTouchingLayers(LayerMask.GetMask("Ground"))) return;
+        if (!myFeet.IsTouchingLayers(LayerMask.GetMask("Ground")) && !myFeet.IsTouchingLayers(LayerMask.GetMask("Climbing"))) return;
+        if (myArms.IsTouchingLayers(LayerMask.GetMask("Ground"))) return;
        
         if (CrossPlatformInputManager.GetButtonDown("Jump"))
         {
